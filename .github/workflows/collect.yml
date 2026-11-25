@@ -1,8 +1,6 @@
 name: Collect iOS sales ranking
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '37 */3 * * *'
 permissions:
   contents: write
 concurrency:
