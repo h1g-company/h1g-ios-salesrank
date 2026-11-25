@@ -1,0 +1,38 @@
+<div class="h1g-ios-rank" data-appid="<!--{$appid|escape:'html'}-->" data-mode="<!--{$mode|default:'short'|escape:'html'}-->">データを読み込み中…</div>
+<script>
+(function(){
+const base='https://h1g-company.github.io/h1g-ios-salesrank/data/';
+const get=async p=>{const r=await fetch(base+p);if(!r.ok)throw Error(r.status);return r.json()};
+const el=(tag,text)=>{const n=document.createElement(tag);if(text!=null)n.textContent=text;return n};
+const rank=v=>v==null?'TOP100圏外':v+'位';
+document.querySelectorAll('.h1g-ios-rank:not([data-ready])').forEach(async root=>{
+root.dataset.ready='1';
+try{
+const mode=root.dataset.mode,id=root.dataset.appid;
+if(mode==='ranking'){
+const d=await get('latest.json');root.replaceChildren(el('p','最終取得：'+new Date(d.t).toLocaleString('ja-JP')));
+const table=el('table');table.className='wikitable';const h=table.insertRow();['順位','変動','アプリ名','開発元'].forEach(v=>h.append(el('th',v)));
+d.ranking.forEach(r=>{const tr=table.insertRow();[r.rank,r.change==null?'—':r.change>0?'↑'+r.change:r.change<0?'↓'+Math.abs(r.change):'→',r.name,r.artist].forEach((v,i)=>{const td=tr.insertCell();if(i===2&&r.wiki&&/^[a-zA-Z0-9_-]+$/.test(r.wiki)){const a=el('a',v);a.href='https://h1g.jp/'+r.wiki+'/';td.append(a)}else td.textContent=v})});root.append(table);return;
+}
+if(!/^\d+$/.test(id))throw Error('Invalid app ID');
+const rows=await get('apps/'+id+'.json');if(!rows.length)throw Error('No data');
+const last=rows[rows.length-1],prev=rows[rows.length-2];root.replaceChildren(el('strong','最新順位：'+rank(last.rank)));
+if(prev&&prev.rank!=null&&last.rank!=null){const diff=prev.rank-last.rank;root.append(el('span','　前回比：'+(diff>0?'↑'+diff:diff<0?'↓'+Math.abs(diff):'→')))}
+root.append(el('p','最終取得：'+new Date(last.t).toLocaleString('ja-JP')));
+const controls=el('div'),chart=el('div');root.append(controls,chart);
+function draw(days){
+chart.replaceChildren();const end=Date.now(),start=end-days*86400000;const data=rows.filter(r=>Date.parse(r.t)>=start);const ranked=data.filter(r=>r.rank!=null);
+if(mode==='full')chart.append(el('p','最高順位：'+(ranked.length?rank(Math.min(...ranked.map(r=>r.rank))):'圏外')+' ／ 平均順位：'+(ranked.length?(ranked.reduce((s,r)=>s+r.rank,0)/ranked.length).toFixed(1)+'位':'—')+' ／ TOP100入り率：'+(data.length?(100*ranked.length/data.length).toFixed(1)+'%':'—')));
+if(!ranked.length){chart.append(el('p','期間内のランクイン記録はありません。'));return}
+const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 600 220');svg.style.width='100%';svg.setAttribute('role','img');svg.setAttribute('aria-label','セルラン順位推移');
+function shape(tag,attrs){const n=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));svg.append(n);return n}
+const y=r=>15+(r-1)*180/99,x=t=>45+(Date.parse(t)-start)/(end-start)*540;
+[1,25,50,75,100].forEach(r=>{shape('line',{x1:45,x2:585,y1:y(r),y2:y(r),stroke:'currentColor',opacity:'.15'});shape('text',{x:3,y:y(r)+4,fill:'currentColor','font-size':12}).textContent=r+'位'});
+let p=null;data.forEach(r=>{if(r.rank==null){p=null;return}const q=[x(r.t),y(r.rank)];if(p)shape('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:'#2785c4','stroke-width':2});shape('circle',{cx:q[0],cy:q[1],r:2.5,fill:'#2785c4'});p=q});shape('text',{x:45,y:215,fill:'currentColor','font-size':12}).textContent=days+'日前';shape('text',{x:550,y:215,fill:'currentColor','font-size':12}).textContent='現在';chart.append(svg)
+}
+if(mode==='full')[7,30,90,365].forEach(d=>{const b=el('button',d+'日');b.type='button';b.addEventListener('click',()=>draw(d));controls.append(b)});draw(7);
+root.append(el('small','App Store（日本）ゲームカテゴリ売上ランキング。原則3時間ごとの観測値。圏外は100位より下。平均順位はランクイン時のみ。'));
+}catch(e){root.textContent='データを取得できませんでした。'}
+});
+})();
+</script>
