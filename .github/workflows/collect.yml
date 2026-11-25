@@ -1,0 +1,25 @@
+name: Collect iOS sales ranking
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '37 */3 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: ios-salesrank
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 collect.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if ! git diff --cached --quiet; then
+            git commit -m "Update iOS sales ranking"
+            git push
+          fi
