@@ -12,7 +12,7 @@ const mode=root.dataset.mode,id=root.dataset.appid;
 if(mode==='ranking'){
 const d=await get('latest.json');root.replaceChildren(el('p','最終取得：'+new Date(d.t).toLocaleString('ja-JP')));
 const table=el('table');table.className='wikitable';const h=table.insertRow();['順位','変動','アプリ名','開発元'].forEach(v=>h.append(el('th',v)));
-d.ranking.forEach(r=>{const tr=table.insertRow();[r.rank,r.change==null?'—':r.change>0?'↑'+r.change:r.change<0?'↓'+Math.abs(r.change):'→',r.name,r.artist].forEach((v,i)=>{const td=tr.insertCell();if(i===2&&r.wiki&&/^[a-zA-Z0-9_-]+$/.test(r.wiki)){const a=el('a',v);a.href='https://h1g.jp/'+r.wiki+'/';td.append(a)}else td.textContent=v})});root.append(table);return;
+d.ranking.forEach(r=>{const tr=table.insertRow();[r.rank,r.change==null?'—':r.change>0?'↑'+r.change:r.change<0?'↓'+Math.abs(r.change):'→',r.name,r.artist].forEach((v,i)=>{const td=tr.insertCell();if(i===2&&r.wiki){const dirs=(Array.isArray(r.wiki)?r.wiki:[r.wiki]).filter(x=>typeof x==='string'&&/^[a-zA-Z0-9_-]+$/.test(x));if(dirs.length===1){const a=el('a',v);a.href='https://h1g.jp/'+dirs[0]+'/';td.append(a)}else{td.textContent=v;dirs.forEach(dir=>{const a=el('a',dir);a.href='https://h1g.jp/'+dir+'/';td.append(document.createTextNode(' '),a)})}}else td.textContent=v})});root.append(table);return;
 }
 if(!/^\d+$/.test(id))throw Error('Invalid app ID');
 const rows=await get('apps/'+id+'.json');if(!rows.length)throw Error('No data');
